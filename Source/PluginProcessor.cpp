@@ -103,6 +103,7 @@ void SimpleEQAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlo
     leftChain.prepare(spec);
     rightChain.prepare(spec);
 
+   
 }
 
 void SimpleEQAudioProcessor::releaseResources()
@@ -146,6 +147,16 @@ void SimpleEQAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
  
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
+    auto chainSettings = getChainSettings(apvts);
+
+    auto peakCoefficients = juce::dsp::IIR::Coefficients<float>::makePeakFilter(getSampleRate(),
+        chainSettings.peakFreq,
+        chainSettings.peakQuality,
+        juce::Decibels::decibelsToGain(chainSettings.peakGainInDecibels));
+
+
+    *leftChain.get<ChainPositions::Peak>().coefficients = *peakCoefficients;
+    *rightChain.get<ChainPositions::Peak>().coefficients = *peakCoefficients;
 
     juce::dsp::AudioBlock<float> block(buffer);
 
@@ -185,12 +196,27 @@ void SimpleEQAudioProcessor::setStateInformation (const void* data, int sizeInBy
     // You should use this method to restore your parameters from this memory block,
     // whose contents will have been created by the getStateInformation() call.
 }
+ChainSetttings getChainSettings(juce::AudioProcessorValueTreeState& apvts) {
+    ChainSetttings settings;
+
+
+    settings.lowCutFreq = apvts.getRawParameterValue("LowCut FQ")->load();
+    settings.highCutFreq = apvts.getRawParameterValue("HighCut FQ")->load();
+    settings.peakFreq = apvts.getRawParameterValue("Peak FQ")->load();
+    settings.peakQuality = apvts.getRawParameterValue("Peak Gain")->load();
+    settings.peakQuality = apvts.getRawParameterValue("Peak Quality")->load();
+    settings.lowCutSlope = apvts.getRawParameterValue("LowCut Slope")->load();
+    settings.highCutSlope = apvts.getRawParameterValue("HighCut Slope")->load();
+    
+    
+    return settings;
+}
 juce::AudioProcessorValueTreeState::ParameterLayout
      SimpleEQAudioProcessor::createParameterLayout(){
     juce::AudioProcessorValueTreeState::ParameterLayout layout;
 
-    layout.add(std::make_unique<juce::AudioParameterFloat>("LowCut FQ testing",
-                                                           "LowCut FQ testing",
+    layout.add(std::make_unique<juce::AudioParameterFloat>("LowCut FQ",
+                                                           "LowCut FQ",
              juce::NormalisableRange<float>(20.f,20000.f,1.f,1.f),20.f));
 
     layout.add(std::make_unique<juce::AudioParameterFloat>("HighCut FQ",
