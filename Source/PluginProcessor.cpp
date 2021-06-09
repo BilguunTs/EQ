@@ -1,7 +1,8 @@
 /*
   ==============================================================================
 
-    This file contains the basic framework code for a JUCE plugin processor.
+Notification in vst doesn't working due to unknown reasons
+me just writing 
 
   ==============================================================================
 */
